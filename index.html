@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KAKA</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .heart {
+            font-size: 50px;
+            animation: heartbeat 1.5s ease-in-out infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes heartbeat {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        .question {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 100px;
+        }
+
+        .btn-yes {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a5a);
+            color: white;
+        }
+
+        .btn-yes:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(255, 107, 107, 0.3);
+        }
+
+        .btn-no {
+            background: #ddd;
+            color: #999;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .btn-no:hover {
+            transform: translate(20px, -10px);
+            background: #ccc;
+        }
+
+        .input-container {
+            margin-top: 20px;
+            display: none;
+        }
+
+        .phone-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            margin-bottom: 15px;
+            transition: border-color 0.3s ease;
+        }
+
+        .phone-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .submit-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            width: 100%;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .success-message {
+            display: none;
+            color: #4CAF50;
+            font-size: 18px;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+
+        .moving-text {
+            position: absolute;
+            color: #ff6b6b;
+            font-size: 14px;
+            pointer-events: none;
+            animation: fadeOut 1s ease-out;
+        }
+
+        @keyframes fadeOut {
+            0% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-20px); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="heart">💕</div>
+        <h1>HAI KAKA CANTIK DAN TEMBEM PIPINYA</h1>
+        <div class="question">
+            Boleh minta nomor HP kamu gak? kan sudah lama kenalan hahaha 🥺
+        </div>
+        
+        <div class="buttons">
+            <button class="btn btn-yes" id="yesBtn">Ya 😊</button>
+            <button class="btn btn-no" id="noBtn">Tidak 😔</button>
+        </div>
+
+        <div class="input-container" id="inputContainer">
+            <input type="tel" class="phone-input" id="phoneInput" placeholder="Masukkan nomor HP kamu..." maxlength="15">
+            <button class="btn submit-btn" id="submitBtn">Kirim 💖</button>
+        </div>
+
+        <div class="success-message" id="successMessage">
+            Terima kasih kaka💕<br>
+            Nomor kamu sudah tersimpan di hatiku 😘
+        </div>
+    </div>
+
+    <script>
+        const yesBtn = document.getElementById('yesBtn');
+        const noBtn = document.getElementById('noBtn');
+        const inputContainer = document.getElementById('inputContainer');
+        const phoneInput = document.getElementById('phoneInput');
+        const submitBtn = document.getElementById('submitBtn');
+        const successMessage = document.getElementById('successMessage');
+        const question = document.querySelector('.question');
+
+        let noClickCount = 0;
+        const funnyMessages = [
+            "Ayolah... 🥺",
+            "Please banget... 😢",
+            "Aku janji gak spam kok! 🤞",
+            "Cuma sekali ini aja... 🙏",
+            "Kamu jahat banget sih! 😭",
+            "Aku udah jatuh cinta nih... 💔",
+            "Masa iya gak boleh? 🥲",
+            "Oke deh, tapi aku sedih... 😪"
+        ];
+
+        // Tombol "Ya" - normal behavior
+        yesBtn.addEventListener('click', function() {
+            inputContainer.style.display = 'block';
+            document.querySelector('.buttons').style.display = 'none';
+            question.textContent = "Yeay! Masukkan nomor HP kamu ya! 🎉";
+            phoneInput.focus();
+        });
+
+        // Tombol "Tidak" - bergerak dan tidak bisa diklik
+        noBtn.addEventListener('mouseover', function() {
+            const randomX = Math.random() * 200 - 100;
+            const randomY = Math.random() * 200 - 100;
+            
+            this.style.transform = `translate(${randomX}px, ${randomY}px)`;
+            
+            // Tambahkan pesan lucu
+            if (noClickCount < funnyMessages.length) {
+                showMovingText(funnyMessages[noClickCount]);
+                noClickCount++;
+            }
+        });
+
+        // Mencegah tombol "Tidak" diklik
+        noBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            showMovingText("Gak bisa diklik! 😜");
+            
+            // Pindahkan tombol ke posisi random
+            const randomX = Math.random() * 300 - 150;
+            const randomY = Math.random() * 300 - 150;
+            this.style.transform = `translate(${randomX}px, ${randomY}px)`;
+        });
+
+        // Submit nomor telepon
+        submitBtn.addEventListener('click', function() {
+            const phoneNumber = phoneInput.value.trim();
+            
+            if (phoneNumber.length < 10) {
+                alert('Nomor HP harus minimal 10 digit ya! 😊');
+                return;
+            }
+
+            // Simpan nomor (dalam aplikasi nyata, kirim ke server)
+            console.log('Nomor HP:', phoneNumber);
+            
+            // Tampilkan pesan sukses
+            inputContainer.style.display = 'none';
+            successMessage.style.display = 'block';
+            question.textContent = "Mission Accomplished! 🎯";
+            
+            // Efek confetti sederhana
+            createConfetti();
+        });
+
+        // Input hanya angka dan beberapa karakter khusus
+        phoneInput.addEventListener('input', function() {
+            this.value = this.value.replace(/[^0-9+\-\s()]/g, '');
+        });
+
+        // Enter key untuk submit
+        phoneInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                submitBtn.click();
+            }
+        });
+
+        // Fungsi untuk menampilkan teks bergerak
+        function showMovingText(text) {
+            const movingText = document.createElement('div');
+            movingText.textContent = text;
+            movingText.className = 'moving-text';
+            movingText.style.left = Math.random() * 300 + 'px';
+            movingText.style.top = Math.random() * 200 + 'px';
+            
+            document.body.appendChild(movingText);
+            
+            setTimeout(() => {
+                movingText.remove();
+            }, 1000);
+        }
+
+        // Efek confetti sederhana
+        function createConfetti() {
+            const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ffeaa7'];
+            
+            for (let i = 0; i < 50; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.style.position = 'fixed';
+                    confetti.style.width = '10px';
+                    confetti.style.height = '10px';
+                    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.left = Math.random() * window.innerWidth + 'px';
+                    confetti.style.top = '-10px';
+                    confetti.style.borderRadius = '50%';
+                    confetti.style.pointerEvents = 'none';
+                    confetti.style.animation = 'fall 3s linear forwards';
+                    
+                    document.body.appendChild(confetti);
+                    
+                    setTimeout(() => {
+                        confetti.remove();
+                    }, 3000);
+                }, i * 100);
+            }
+        }
+
+        // CSS untuk animasi jatuh confetti
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fall {
+                to {
+                    transform: translateY(${window.innerHeight + 50}px) rotate(360deg);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
