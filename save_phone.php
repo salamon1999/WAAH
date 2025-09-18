@@ -45,13 +45,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'unknown'
     );
     
-    // Read existing data
-    $filename = 'phone_numbers.json';
+    // Read existing data from text files
+    $dataFilename = 'phone_numbers_data.txt';
+    $notesFilename = 'phone_numbers.txt';
     $data = array();
     
-    if (file_exists($filename)) {
-        $jsonData = file_get_contents($filename);
-        $data = json_decode($jsonData, true) ?: array();
+    if (file_exists($dataFilename)) {
+        $lines = file($dataFilename, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        foreach ($lines as $line) {
+            $data[] = json_decode($line, true);
+        }
     }
     
     // Check if phone number already exists
@@ -65,11 +68,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
     
-    // Add new entry
+    // Add new entry to data array
     $data[] = $entry;
     
-    // Save to file
-    if (file_put_contents($filename, json_encode($data, JSON_PRETTY_PRINT))) {
+    // Save detailed data to data file (one JSON object per line)
+    $dataLine = json_encode($entry) . "\n";
+    if (file_put_contents($dataFilename, $dataLine, FILE_APPEND | LOCK_EX)) {
+        // Also append to the simple notes file for easy download
+        $noteLine = $cleanPhone . " - " . date('Y-m-d H:i:s') . " (" . $phoneNumber . ")\n";
+        file_put_contents($notesFilename, $noteLine, FILE_APPEND | LOCK_EX);
+        
         $response['status'] = 'success';
         $response['message'] = 'Nomor HP berhasil disimpan!';
         $response['data'] = $entry;
@@ -82,19 +90,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
 } elseif ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    // Return count of saved numbers (for basic stats)
-    $filename = 'phone_numbers.json';
-    $count = 0;
-    
-    if (file_exists($filename)) {
-        $jsonData = file_get_contents($filename);
-        $data = json_decode($jsonData, true) ?: array();
-        $count = count($data);
+    // Check if requesting data for admin panel
+    if (isset($_GET['action']) && $_GET['action'] === 'get_data') {
+        // Return all data for admin panel
+        $dataFilename = 'phone_numbers_data.txt';
+        $data = array();
+        
+        if (file_exists($dataFilename)) {
+            $lines = file($dataFilename, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+            foreach ($lines as $line) {
+                $entry = json_decode($line, true);
+                if ($entry) {
+                    $data[] = $entry;
+                }
+            }
+        }
+        
+        $response['status'] = 'success';
+        $response['data'] = $data;
+    } else {
+        // Return count of saved numbers (for basic stats)
+        $dataFilename = 'phone_numbers_data.txt';
+        $count = 0;
+        
+        if (file_exists($dataFilename)) {
+            $lines = file($dataFilename, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+            $count = count($lines);
+        }
+        
+        $response['status'] = 'success';
+        $response['total_numbers'] = $count;
+        $response['message'] = "Total nomor tersimpan: $count";
     }
-    
-    $response['status'] = 'success';
-    $response['total_numbers'] = $count;
-    $response['message'] = "Total nomor tersimpan: $count";
     
 } else {
     $response['status'] = 'error';

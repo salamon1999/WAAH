@@ -227,6 +227,7 @@
 
         <div class="controls">
             <button class="btn btn-primary" onclick="loadData()">🔄 Refresh</button>
+            <button class="btn btn-primary" onclick="downloadNotes()">📝 Download Notes</button>
             <button class="btn btn-primary" onclick="exportData()">📥 Export JSON</button>
             <button class="btn btn-danger" onclick="clearSearch()">🗑️ Clear Search</button>
             <input type="text" class="search-box" id="searchBox" placeholder="Cari nomor HP atau IP address..." oninput="filterData()">
@@ -268,21 +269,26 @@
             try {
                 showLoading();
                 
-                const response = await fetch('phone_numbers.json');
+                const response = await fetch('save_phone.php?action=get_data');
                 if (!response.ok) {
                     throw new Error('Failed to fetch data');
                 }
                 
-                allData = await response.json();
-                filteredData = [...allData];
-                
-                updateStats();
-                renderTable();
-                clearError();
+                const result = await response.json();
+                if (result.status === 'success') {
+                    allData = result.data || [];
+                    filteredData = [...allData];
+                    
+                    updateStats();
+                    renderTable();
+                    clearError();
+                } else {
+                    throw new Error(result.message || 'Failed to load data');
+                }
                 
             } catch (error) {
                 console.error('Error loading data:', error);
-                showError('Gagal memuat data. Pastikan file phone_numbers.json ada dan dapat diakses.');
+                showError('Gagal memuat data. Pastikan server PHP berjalan dan dapat diakses.');
             }
         }
 
@@ -363,6 +369,37 @@
         function clearSearch() {
             document.getElementById('searchBox').value = '';
             filterData();
+        }
+
+        function downloadNotes() {
+            if (allData.length === 0) {
+                alert('Tidak ada data untuk didownload!');
+                return;
+            }
+            
+            // Create a simple text format for easy reading
+            let notesContent = `DAFTAR NOMOR HP\n`;
+            notesContent += `Diunduh pada: ${new Date().toLocaleString('id-ID')}\n`;
+            notesContent += `Total nomor: ${allData.length}\n`;
+            notesContent += `${'='.repeat(50)}\n\n`;
+            
+            // Sort by timestamp (newest first)
+            const sortedData = [...allData].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            sortedData.forEach((item, index) => {
+                notesContent += `${index + 1}. ${item.phone_number}\n`;
+                notesContent += `   Input asli: ${item.original_input}\n`;
+                notesContent += `   Tanggal: ${new Date(item.timestamp).toLocaleString('id-ID')}\n`;
+                notesContent += `   IP Address: ${item.ip_address}\n`;
+                notesContent += `\n`;
+            });
+            
+            const notesBlob = new Blob([notesContent], {type: 'text/plain; charset=utf-8'});
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(notesBlob);
+            link.download = `nomor_hp_${new Date().toISOString().split('T')[0]}.txt`;
+            link.click();
         }
 
         function exportData() {
