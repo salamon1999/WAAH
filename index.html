@@ -234,16 +234,47 @@
                 return;
             }
 
-            // Simpan nomor (dalam aplikasi nyata, kirim ke server)
-            console.log('Nomor HP:', phoneNumber);
-            
-            // Tampilkan pesan sukses
-            inputContainer.style.display = 'none';
-            successMessage.style.display = 'block';
-            question.textContent = "Mission Accomplished! 🎯";
-            
-            // Efek confetti sederhana
-            createConfetti();
+            // Disable button to prevent double submission
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Menyimpan... ⏳';
+
+            // Kirim nomor HP ke server
+            fetch('save_phone.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    phone: phoneNumber
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Server response:', data);
+                
+                if (data.status === 'success' || data.status === 'warning') {
+                    // Tampilkan pesan sukses
+                    inputContainer.style.display = 'none';
+                    successMessage.style.display = 'block';
+                    question.textContent = "Mission Accomplished! 🎯";
+                    
+                    // Efek confetti sederhana
+                    createConfetti();
+                    
+                    // Log untuk debugging
+                    console.log('Nomor HP berhasil disimpan:', phoneNumber);
+                } else {
+                    alert('Error: ' + data.message);
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Kirim 💖';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Maaf, ada masalah teknis. Nomor HP tidak bisa disimpan saat ini.');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Kirim 💖';
+            });
         });
 
         // Input hanya angka dan beberapa karakter khusus

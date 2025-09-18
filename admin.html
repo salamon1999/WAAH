@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Database Nomor HP</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .stat-card {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            min-width: 150px;
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .controls {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a6fd8;
+            transform: translateY(-1px);
+        }
+
+        .btn-danger {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #ee5a5a;
+            transform: translateY(-1px);
+        }
+
+        .search-box {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            min-width: 200px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            background: #f8f9fa;
+            font-weight: bold;
+            color: #333;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .phone-number {
+            font-weight: bold;
+            color: #667eea;
+            font-size: 16px;
+        }
+
+        .timestamp {
+            color: #666;
+            font-size: 12px;
+        }
+
+        .ip-address {
+            font-family: monospace;
+            font-size: 12px;
+            color: #888;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #666;
+        }
+
+        .error {
+            color: #ff6b6b;
+            text-align: center;
+            padding: 20px;
+            background: #ffebee;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 50px;
+            color: #999;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .search-box {
+                min-width: auto;
+            }
+            
+            th, td {
+                padding: 8px;
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📱 Database Nomor HP Admin Panel</h1>
+            <p>Kelola dan lihat semua nomor HP yang masuk</p>
+        </div>
+
+        <div class="stats" id="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="totalNumbers">-</div>
+                <div class="stat-label">Total Nomor</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="todayNumbers">-</div>
+                <div class="stat-label">Hari Ini</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="uniqueIPs">-</div>
+                <div class="stat-label">Unique IPs</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-primary" onclick="loadData()">🔄 Refresh</button>
+            <button class="btn btn-primary" onclick="exportData()">📥 Export JSON</button>
+            <button class="btn btn-danger" onclick="clearSearch()">🗑️ Clear Search</button>
+            <input type="text" class="search-box" id="searchBox" placeholder="Cari nomor HP atau IP address..." oninput="filterData()">
+        </div>
+
+        <div id="errorMessage"></div>
+
+        <div class="table-container">
+            <table id="dataTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nomor HP</th>
+                        <th>Input Asli</th>
+                        <th>Tanggal & Waktu</th>
+                        <th>IP Address</th>
+                        <th>User Agent</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr>
+                        <td colspan="6" class="loading">Memuat data...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let allData = [];
+        let filteredData = [];
+
+        // Load data when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadData();
+        });
+
+        async function loadData() {
+            try {
+                showLoading();
+                
+                const response = await fetch('phone_numbers.json');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch data');
+                }
+                
+                allData = await response.json();
+                filteredData = [...allData];
+                
+                updateStats();
+                renderTable();
+                clearError();
+                
+            } catch (error) {
+                console.error('Error loading data:', error);
+                showError('Gagal memuat data. Pastikan file phone_numbers.json ada dan dapat diakses.');
+            }
+        }
+
+        function updateStats() {
+            const total = allData.length;
+            const today = new Date().toISOString().split('T')[0];
+            const todayCount = allData.filter(item => item.timestamp.startsWith(today)).length;
+            const uniqueIPs = new Set(allData.map(item => item.ip_address)).size;
+
+            document.getElementById('totalNumbers').textContent = total;
+            document.getElementById('todayNumbers').textContent = todayCount;
+            document.getElementById('uniqueIPs').textContent = uniqueIPs;
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            
+            if (filteredData.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="empty-state">
+                            <h3>Tidak ada data</h3>
+                            <p>Belum ada nomor HP yang tersimpan atau tidak ada yang sesuai dengan pencarian.</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            const rows = filteredData
+                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                .map(item => `
+                    <tr>
+                        <td><code>${item.id}</code></td>
+                        <td class="phone-number">${item.phone_number}</td>
+                        <td>${item.original_input}</td>
+                        <td class="timestamp">${formatTimestamp(item.timestamp)}</td>
+                        <td class="ip-address">${item.ip_address}</td>
+                        <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${item.user_agent}">
+                            ${item.user_agent}
+                        </td>
+                    </tr>
+                `).join('');
+
+            tbody.innerHTML = rows;
+        }
+
+        function formatTimestamp(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleString('id-ID', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        }
+
+        function filterData() {
+            const searchTerm = document.getElementById('searchBox').value.toLowerCase();
+            
+            if (!searchTerm) {
+                filteredData = [...allData];
+            } else {
+                filteredData = allData.filter(item => 
+                    item.phone_number.toLowerCase().includes(searchTerm) ||
+                    item.original_input.toLowerCase().includes(searchTerm) ||
+                    item.ip_address.toLowerCase().includes(searchTerm) ||
+                    item.timestamp.toLowerCase().includes(searchTerm) ||
+                    item.id.toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            renderTable();
+        }
+
+        function clearSearch() {
+            document.getElementById('searchBox').value = '';
+            filterData();
+        }
+
+        function exportData() {
+            if (allData.length === 0) {
+                alert('Tidak ada data untuk diekspor!');
+                return;
+            }
+            
+            const dataStr = JSON.stringify(allData, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = `phone_numbers_backup_${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+        }
+
+        function showLoading() {
+            document.getElementById('tableBody').innerHTML = `
+                <tr>
+                    <td colspan="6" class="loading">Memuat data...</td>
+                </tr>
+            `;
+        }
+
+        function showError(message) {
+            document.getElementById('errorMessage').innerHTML = `
+                <div class="error">${message}</div>
+            `;
+        }
+
+        function clearError() {
+            document.getElementById('errorMessage').innerHTML = '';
+        }
+
+        // Auto refresh every 30 seconds
+        setInterval(loadData, 30000);
+    </script>
+</body>
+</html>
